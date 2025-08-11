@@ -39,8 +39,9 @@ whenever you make changes.
     - In html, you can dispatch the slightly more complicated way:
       ```html
       <stateful-client>
-        <button onclick="this.closest('stateful-client').dispatch({type: 'TURN'})">
+        <button onclick="closest('stateful-client').dispatch({type: 'TURN'})">
       <\stateful-client>
       ```
     - And in custom components, you can have them extend StatefulHTML to get access to
       dispatch, getState, etc. and override an onChange method that fires whenever state changes.
+
