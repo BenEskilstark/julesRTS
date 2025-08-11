@@ -8,9 +8,7 @@
     <div style="width: 100%; margin: auto">
       <stateful-client>
         <game-board width=10 height=10>
-          <canvas class="boardcanvas" width=400 height=400
-            onclick="this.closest('game-board').canvasClick(event)"
-          />
+          <canvas class="boardcanvas" width=400 height=400/>
         </game-board>
         <button onclick="this.closest('stateful-client').dispatch({type: 'TURN'})">
           End Turn
@@ -18,9 +16,7 @@
       </stateful-client>
       <stateful-client>
         <game-board width=18 height=18>
-          <canvas class="boardcanvas" width=800 height=800
-            onclick="this.closest('game-board').canvasClick(event)"
-          />
+          <canvas class="boardcanvas" width=800 height=800/>
         </game-board>
         <button onclick="this.closest('stateful-client').dispatch({type: 'TURN'})">
           End Turn

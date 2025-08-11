@@ -15,7 +15,7 @@ function reconstructPath(cameFrom, current) {
   return totalPath;
 }
 
-export function findPath(grid, start, end) {
+export function findPath(grid, units, start, end) {
   const openSet = [start];
   const closedSet = new Set();
   const cameFrom = {};
@@ -57,6 +57,10 @@ export function findPath(grid, start, end) {
 
       const cell = smartGet(grid, neighbor);
       if (cell && cell.type === 'mountain') {
+        continue;
+      }
+      const isOccupied = smartGet(units, neighbor);
+      if (isOccupied && (neighbor.x !== end.x || neighbor.y !== end.y)) {
         continue;
       }
 

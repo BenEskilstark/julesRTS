@@ -3,8 +3,7 @@ import { smartGet, fromKey, toKey } from '../utils/arraysAndObjects.js';
 
 export default class GameBoard extends StatefulHTML {
   connectedCallback() {
-    this.render(this.getState());
-    this.selectedUnits = [];
+    this.selectedUnits = []; // Now stores unit IDs
     this.selectionBox = null;
     this.isDragging = false;
     this.gameLoop = null;
@@ -18,6 +17,8 @@ export default class GameBoard extends StatefulHTML {
     this.gameLoop = setInterval(() => {
       this.dispatch({ type: 'TICK' });
     }, 200);
+
+    this.render(this.getState());
   }
 
   disconnectedCallback() {
@@ -67,7 +68,7 @@ export default class GameBoard extends StatefulHTML {
       const { x, y } = fromKey(key);
       const unit = smartGet(units, key);
       if (unit.player === playerId && x >= minX && x <= maxX && y >= minY && y <= maxY) {
-        this.selectedUnits.push(toKey({x, y}));
+        this.selectedUnits.push(unit.id);
       }
     }
 
@@ -79,9 +80,18 @@ export default class GameBoard extends StatefulHTML {
     ev.preventDefault();
     const target = this.getGridCoords(ev);
     if (this.selectedUnits.length > 0 && target) {
+      const { units } = this.getState();
+      const selectedUnitCoords = [];
+      for (const key in units) {
+        const unit = smartGet(units, key);
+        if (this.selectedUnits.includes(unit.id)) {
+          selectedUnitCoords.push(key);
+        }
+      }
+
       this.dispatch({
         type: 'MOVE_UNITS',
-        units: this.selectedUnits,
+        units: selectedUnitCoords,
         target,
       });
     }
@@ -144,11 +154,14 @@ export default class GameBoard extends StatefulHTML {
     // selected units highlight
     ctx.strokeStyle = 'yellow';
     ctx.lineWidth = 2;
-    for (const key of this.selectedUnits) {
+    for (const key in units) {
+      const unit = smartGet(units, key);
+      if (this.selectedUnits.includes(unit.id)) {
         const {x, y} = fromKey(key);
         ctx.beginPath();
         ctx.arc((x + 0.5) * sqSize, (y + 0.5) * sqSize, sqSize / 2 - 1, 0, Math.PI * 2);
         ctx.stroke();
+      }
     }
 
     // selection box

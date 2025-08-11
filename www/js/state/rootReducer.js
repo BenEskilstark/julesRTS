@@ -56,7 +56,7 @@ export const rootReducer = (state, action) => {
 
         if (!end) continue; // No available cell for this unit
 
-        const path = findPath(state.grid, start, end);
+        const path = findPath(state.grid, state.units, start, end);
         if (path && path.length > 1 && unit.fuel >= path.length - 1) {
           const newFuel = unit.fuel - (path.length - 1);
           const newUnit = { ...unit, fuel: newFuel, path: path.slice(1) };
