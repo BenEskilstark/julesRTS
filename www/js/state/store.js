@@ -20,7 +20,7 @@ export const useReducer = (reducer, state) => {
       if (action.type == undefined) {
         state = {...state, ...action}
       } else { // else use the reducer like normal
-        state = rootReducer(state, action);
+        state = reducer(state, action);
       }
 
       // then call all your subscriber's callbacks
