@@ -1,16 +1,104 @@
 import StatefulHTML from './StatefulHTML.js';
-
+import { smartGet, fromKey, toKey } from '../utils/arraysAndObjects.js';
 
 export default class GameBoard extends StatefulHTML {
   connectedCallback() {
-    const width = parseInt(this.getAttribute("width"));
-    const height = parseInt(this.getAttribute("height"));
-    this.dispatch({width, height});
+    this.selectedUnits = []; // Now stores unit IDs
+    this.selectionBox = null;
+    this.isDragging = false;
+    this.gameLoop = null;
+
+    const canvas = this.querySelector('canvas');
+    canvas.addEventListener('mousedown', this.handleMouseDown.bind(this));
+    canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
+    canvas.addEventListener('mouseup', this.handleMouseUp.bind(this));
+    canvas.addEventListener('contextmenu', this.handleRightClick.bind(this));
+
+    this.gameLoop = setInterval(() => {
+      this.dispatch({ type: 'TICK' });
+    }, 200);
+
     this.render(this.getState());
   }
 
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    clearInterval(this.gameLoop);
+  }
+
+  getGridCoords(ev) {
+    const { width, height } = this.getState();
+    const canvas = this.querySelector("canvas");
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+    const sqSize = rect.width / width;
+    const x = Math.floor((ev.clientX - rect.left) / sqSize);
+    const y = Math.floor((ev.clientY - rect.top) / sqSize);
+    return { x, y };
+  }
+
+  handleMouseDown(ev) {
+    if (ev.button !== 0) return; // Only respond to left-clicks
+    this.isDragging = true;
+    const { x, y } = this.getGridCoords(ev);
+    this.selectionBox = { startX: x, startY: y, endX: x, endY: y };
+  }
+
+  handleMouseMove(ev) {
+    if (!this.isDragging) return;
+    const { x, y } = this.getGridCoords(ev);
+    this.selectionBox.endX = x;
+    this.selectionBox.endY = y;
+    this.render(this.getState());
+  }
+
+  handleMouseUp(ev) {
+    if (ev.button !== 0) return; // Only respond to left-clicks
+    this.isDragging = false;
+    const { units, playerId } = this.getState();
+    const { startX, startY, endX, endY } = this.selectionBox;
+
+    const minX = Math.min(startX, endX);
+    const maxX = Math.max(startX, endX);
+    const minY = Math.min(startY, endY);
+    const maxY = Math.max(startY, endY);
+
+    this.selectedUnits = [];
+    for (const key in units) {
+      const { x, y } = fromKey(key);
+      const unit = smartGet(units, key);
+      if (unit.player === playerId && x >= minX && x <= maxX && y >= minY && y <= maxY) {
+        this.selectedUnits.push(unit.id);
+      }
+    }
+
+    this.selectionBox = null;
+    this.render(this.getState());
+  }
+
+  handleRightClick(ev) {
+    ev.preventDefault();
+    const target = this.getGridCoords(ev);
+    if (this.selectedUnits.length > 0 && target) {
+      const { units } = this.getState();
+      const selectedUnitCoords = [];
+      for (const key in units) {
+        const unit = smartGet(units, key);
+        if (this.selectedUnits.includes(unit.id)) {
+          selectedUnitCoords.push(key);
+        }
+      }
+
+      this.dispatch({
+        type: 'MOVE_UNITS',
+        units: selectedUnitCoords,
+        target,
+      });
+    }
+  }
+
   render(state) {
-    const {width, height} = state;
+    const {width, height, grid, units} = state;
 
     const canvas = this.querySelector("canvas")
     if (!canvas) return;
@@ -36,39 +124,60 @@ export default class GameBoard extends StatefulHTML {
     }
     ctx.stroke();
 
-    // little grid helper circles
-    for (let x = Math.round(width / 3 / 2); x < width; x += Math.round(width/3)) {
-      for (let y = Math.round(height / 3 / 2); y < height; y += Math.round(height/3)) {
-        ctx.fillStyle = "black";
-        ctx.beginPath();
-        ctx.arc(x * sqSize, y * sqSize, sqSize / 6, 0, Math.PI * 2);
-        ctx.fill();
+    // terrain
+    for (const key in grid) {
+      const {x, y} = fromKey(key);
+      const cell = smartGet(grid, key);
+      if (cell.type === 'mountain') {
+        ctx.fillStyle = 'gray';
+        ctx.fillRect(x * sqSize, y * sqSize, sqSize, sqSize);
       }
     }
 
-    for (const piece of state.pieces) {
-      const {x, y, color} = piece;
-      ctx.fillStyle = color;
+    // units
+    for (const key in units) {
+      const {x, y} = fromKey(key);
+      const unit = smartGet(units, key);
+      ctx.fillStyle = unit.player === 'player1' ? 'blue' : 'red';
       ctx.beginPath();
-      ctx.arc(x * sqSize, y * sqSize, sqSize / 2 - 3, 0, Math.PI * 2);
+      ctx.arc((x + 0.5) * sqSize, (y + 0.5) * sqSize, sqSize / 2 - 3, 0, Math.PI * 2);
       ctx.fill();
+
+      // unit type
+      ctx.fillStyle = 'white';
+      ctx.font = `${sqSize / 2}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(unit.type[0].toUpperCase(), (x + 0.5) * sqSize, (y + 0.5) * sqSize);
+    }
+
+    // selected units highlight
+    ctx.strokeStyle = 'yellow';
+    ctx.lineWidth = 2;
+    for (const key in units) {
+      const unit = smartGet(units, key);
+      if (this.selectedUnits.includes(unit.id)) {
+        const {x, y} = fromKey(key);
+        ctx.beginPath();
+        ctx.arc((x + 0.5) * sqSize, (y + 0.5) * sqSize, sqSize / 2 - 1, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+
+    // selection box
+    if (this.selectionBox) {
+        const { startX, startY, endX, endY } = this.selectionBox;
+        const minX = Math.min(startX, endX);
+        const maxX = Math.max(startX, endX);
+        const minY = Math.min(startY, endY);
+        const maxY = Math.max(startY, endY);
+        ctx.strokeStyle = 'green';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(minX * sqSize, minY * sqSize, (maxX - minX + 1) * sqSize, (maxY - minY + 1) * sqSize);
     }
   }
 
   onChange(state) {
     this.render(state);
   }
-
-  canvasClick(ev) {
-    const {width, height, color} = this.getState();
-    const canvas = this.querySelector("canvas")
-    if (!canvas) return;
-    const sqSize = canvas.getBoundingClientRect().width / width;
-
-    const x = Math.round(ev.offsetX / sqSize);
-    const y = Math.round(ev.offsetY / sqSize);
-    this.dispatch({type: 'PLACE_PIECE', x, y, color});
-  }
 }
-
-
