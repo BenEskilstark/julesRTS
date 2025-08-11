@@ -3,7 +3,6 @@ import { smartGet, fromKey, toKey } from '../utils/arraysAndObjects.js';
 
 export default class GameBoard extends StatefulHTML {
   connectedCallback() {
-    this.render(this.getState());
     this.selectedUnits = [];
     this.selectionBox = null;
     this.isDragging = false;
@@ -13,6 +12,8 @@ export default class GameBoard extends StatefulHTML {
     canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
     canvas.addEventListener('mouseup', this.handleMouseUp.bind(this));
     canvas.addEventListener('contextmenu', this.handleRightClick.bind(this));
+
+    this.render(this.getState());
   }
 
   getGridCoords(ev) {
