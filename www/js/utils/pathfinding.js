@@ -17,6 +17,7 @@ function reconstructPath(cameFrom, current) {
 
 export function findPath(grid, start, end) {
   const openSet = [start];
+  const closedSet = new Set();
   const cameFrom = {};
 
   const gScore = {};
@@ -29,7 +30,7 @@ export function findPath(grid, start, end) {
     let current = openSet[0];
     let currentIndex = 0;
     for (let i = 1; i < openSet.length; i++) {
-      if (smartGet(fScore, openSet[i]) < smartGet(fScore, current)) {
+      if (smartGet(fScore, openSet[i], Infinity) < smartGet(fScore, current, Infinity)) {
         current = openSet[i];
         currentIndex = i;
       }
@@ -40,6 +41,7 @@ export function findPath(grid, start, end) {
     }
 
     openSet.splice(currentIndex, 1);
+    closedSet.add(toKey(current));
 
     const neighbors = [
       { x: current.x + 1, y: current.y },
@@ -49,13 +51,17 @@ export function findPath(grid, start, end) {
     ];
 
     for (const neighbor of neighbors) {
+      if (closedSet.has(toKey(neighbor))) {
+        continue;
+      }
+
       const cell = smartGet(grid, neighbor);
       if (cell && cell.type === 'mountain') {
         continue;
       }
 
-      const tentativeGScore = smartGet(gScore, current) + 1;
-      const neighborGScore = smartGet(gScore, neighbor) || Infinity;
+      const tentativeGScore = smartGet(gScore, current, Infinity) + 1;
+      const neighborGScore = smartGet(gScore, neighbor, Infinity);
 
       if (tentativeGScore < neighborGScore) {
         cameFrom[toKey(neighbor)] = current;
