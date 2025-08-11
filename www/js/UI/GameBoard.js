@@ -3,6 +3,7 @@ import { smartGet, fromKey, toKey } from '../utils/arraysAndObjects.js';
 
 export default class GameBoard extends StatefulHTML {
   connectedCallback() {
+    this.render(this.getState());
     this.selectedUnits = [];
     this.selectionBox = null;
     this.isDragging = false;
@@ -12,8 +13,6 @@ export default class GameBoard extends StatefulHTML {
     canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
     canvas.addEventListener('mouseup', this.handleMouseUp.bind(this));
     canvas.addEventListener('contextmenu', this.handleRightClick.bind(this));
-
-    this.render(this.getState());
   }
 
   getGridCoords(ev) {
@@ -28,6 +27,7 @@ export default class GameBoard extends StatefulHTML {
   }
 
   handleMouseDown(ev) {
+    if (ev.button !== 0) return; // Only respond to left-clicks
     this.isDragging = true;
     const { x, y } = this.getGridCoords(ev);
     this.selectionBox = { startX: x, startY: y, endX: x, endY: y };
@@ -42,6 +42,7 @@ export default class GameBoard extends StatefulHTML {
   }
 
   handleMouseUp(ev) {
+    if (ev.button !== 0) return; // Only respond to left-clicks
     this.isDragging = false;
     const { units, playerId } = this.getState();
     const { startX, startY, endX, endY } = this.selectionBox;
@@ -143,9 +144,13 @@ export default class GameBoard extends StatefulHTML {
     // selection box
     if (this.selectionBox) {
         const { startX, startY, endX, endY } = this.selectionBox;
+        const minX = Math.min(startX, endX);
+        const maxX = Math.max(startX, endX);
+        const minY = Math.min(startY, endY);
+        const maxY = Math.max(startY, endY);
         ctx.strokeStyle = 'green';
         ctx.lineWidth = 1;
-        ctx.strokeRect(startX * sqSize, startY * sqSize, (endX - startX + 1) * sqSize, (endY - startY + 1) * sqSize);
+        ctx.strokeRect(minX * sqSize, minY * sqSize, (maxX - minX + 1) * sqSize, (maxY - minY + 1) * sqSize);
     }
   }
 

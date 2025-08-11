@@ -9,6 +9,7 @@
       <stateful-client>
         <game-board width=10 height=10>
           <canvas class="boardcanvas" width=400 height=400
+            onclick="this.closest('game-board').canvasClick(event)"
           />
         </game-board>
         <button onclick="this.closest('stateful-client').dispatch({type: 'TURN'})">
@@ -18,6 +19,7 @@
       <stateful-client>
         <game-board width=18 height=18>
           <canvas class="boardcanvas" width=800 height=800
+            onclick="this.closest('game-board').canvasClick(event)"
           />
         </game-board>
         <button onclick="this.closest('stateful-client').dispatch({type: 'TURN'})">
