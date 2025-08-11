@@ -59,14 +59,32 @@ export const rootReducer = (state, action) => {
         const path = findPath(state.grid, start, end);
         if (path && path.length > 1 && unit.fuel >= path.length - 1) {
           const newFuel = unit.fuel - (path.length - 1);
-          const newUnit = { ...unit, fuel: newFuel };
-          const newUnitKey = toKey(end);
+          const newUnit = { ...unit, fuel: newFuel, path: path.slice(1) };
 
-          delete newUnits[unitKey];
-          newUnits[newUnitKey] = newUnit;
+          // The key of the unit in the units map doesn't change until it moves.
+          newUnits[unitKey] = newUnit;
         }
       }
       return {...state, units: newUnits};
+    }
+    case 'TICK': {
+      const newUnits = { ...state.units };
+      let changed = false;
+      for (const unitKey in newUnits) {
+        const unit = newUnits[unitKey];
+        if (unit.path && unit.path.length > 0) {
+          changed = true;
+          const nextPos = unit.path[0];
+          const newUnit = { ...unit, path: unit.path.slice(1) };
+
+          delete newUnits[unitKey];
+          newUnits[toKey(nextPos)] = newUnit;
+        }
+      }
+      if (changed) {
+        return {...state, units: newUnits};
+      }
+      return state;
     }
     default:
       return state;

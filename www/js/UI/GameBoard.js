@@ -7,12 +7,22 @@ export default class GameBoard extends StatefulHTML {
     this.selectedUnits = [];
     this.selectionBox = null;
     this.isDragging = false;
+    this.gameLoop = null;
 
     const canvas = this.querySelector('canvas');
     canvas.addEventListener('mousedown', this.handleMouseDown.bind(this));
     canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
     canvas.addEventListener('mouseup', this.handleMouseUp.bind(this));
     canvas.addEventListener('contextmenu', this.handleRightClick.bind(this));
+
+    this.gameLoop = setInterval(() => {
+      this.dispatch({ type: 'TICK' });
+    }, 200);
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    clearInterval(this.gameLoop);
   }
 
   getGridCoords(ev) {

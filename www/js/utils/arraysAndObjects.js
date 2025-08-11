@@ -29,12 +29,14 @@ export const fromKey = (someStr) => {
   return JSON.parse(someStr);
 }
 
-export const smartGet = (smartMap, strOrJSON) => {
+export const smartGet = (smartMap, strOrJSON, defaultValue) => {
+  let value;
   if (typeof strOrJSON == "string") {
-    return smartMap[strOrJSON];
+    value = smartMap[strOrJSON];
   } else {
-    return smartMap[toKey(strOrJSON)];
+    value = smartMap[toKey(strOrJSON)];
   }
+  return value !== undefined ? value : defaultValue;
 }
 
 export const smartSet = (smartMap, strOrJSON, value) => {
