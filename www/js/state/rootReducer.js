@@ -70,17 +70,33 @@ export const rootReducer = (state, action) => {
     case 'TICK': {
       const newUnits = { ...state.units };
       let changed = false;
-      for (const unitKey in newUnits) {
+      const movedUnits = new Set(); // Track units that have already moved this tick
+      const unitKeys = Object.keys(newUnits);
+
+      for (const unitKey of unitKeys) {
+        // If this unit has already been moved (i.e., its key changed), skip it.
+        if (movedUnits.has(unitKey)) continue;
+
         const unit = newUnits[unitKey];
         if (unit.path && unit.path.length > 0) {
-          changed = true;
           const nextPos = unit.path[0];
-          const newUnit = { ...unit, path: unit.path.slice(1) };
+          const nextPosKey = toKey(nextPos);
 
-          delete newUnits[unitKey];
-          newUnits[toKey(nextPos)] = newUnit;
+          // Check if the destination is occupied
+          if (newUnits[nextPosKey]) {
+            // It's occupied. Stop the unit.
+            newUnits[unitKey] = { ...unit, path: [] };
+          } else {
+            // It's free. Move the unit.
+            const newUnit = { ...unit, path: unit.path.slice(1) };
+            delete newUnits[unitKey];
+            newUnits[nextPosKey] = newUnit;
+            movedUnits.add(nextPosKey); // Mark the new key as "moved"
+          }
+          changed = true;
         }
       }
+
       if (changed) {
         return {...state, units: newUnits};
       }
